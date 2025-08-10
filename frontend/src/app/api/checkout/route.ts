@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+interface ErrorResponse {
+  detail?: string;
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { priceId?: string };
@@ -21,8 +25,8 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json({ error: (errorData as any).detail || 'Failed to create checkout session' }, { status: response.status });
+      const errorData: ErrorResponse = await response.json().catch(() => ({}) as ErrorResponse);
+      return NextResponse.json({ error: errorData.detail || 'Failed to create checkout session' }, { status: response.status });
     }
 
     const sessionData = await response.json();
