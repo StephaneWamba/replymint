@@ -9,6 +9,11 @@ param(
 
 Write-Host "Deploying ReplyMint Backend to $Environment environment..." -ForegroundColor Green
 
+# Resolve important paths
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = (Resolve-Path (Join-Path $ScriptDir '..')).Path
+$BackendDir = Join-Path $RepoRoot 'backend'
+
 # Set environment-specific parameters
 if ($Environment -eq "prod") {
     $StackName = "replymint-prod"
@@ -41,23 +46,28 @@ try {
     exit 1
 }
 
-# Build the SAM application
+# Build the SAM application from backend directory
 Write-Host "Building SAM application..." -ForegroundColor Blue
+Push-Location $BackendDir
 sam build --use-container
 
 if ($LASTEXITCODE -ne 0) {
+    Pop-Location
     Write-Host "Build failed!" -ForegroundColor Red
     exit 1
 }
 
 # Deploy to the specified environment using the created S3 bucket
 Write-Host "Deploying to $StackName using S3 bucket: $S3BucketName" -ForegroundColor Blue
-sam deploy --stack-name $StackName --s3-bucket $S3BucketName --parameter-overrides "Environment=$Environment LogRetentionDays=$LogRetention" --capabilities CAPABILITY_IAM --no-confirm-changeset
+sam deploy --stack-name $StackName --s3-bucket $S3BucketName --parameter-overrides "Environment=$Environment LogRetentionDays=$LogRetention" --capabilities CAPABILITY_IAM --region eu-central-1 --no-confirm-changeset
 
 if ($LASTEXITCODE -ne 0) {
+    Pop-Location
     Write-Host "Deployment failed!" -ForegroundColor Red
     exit 1
 }
+
+Pop-Location
 
 Write-Host "Deployment completed successfully!" -ForegroundColor Green
 

@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     # CORS
     allowed_origins: List[str] = Field(default_factory=list)
+    allowed_origin_regex: Optional[str] = None
 
     # Mailgun (loaded from SSM)
     mailgun_api_key: Optional[str] = None
@@ -58,11 +59,14 @@ def get_settings() -> Settings:
         load_ssm_parameters(settings)
 
     # Set default allowed origins based on environment
-    if not settings.allowed_origins:
+    if not settings.allowed_origins and not settings.allowed_origin_regex:
         if settings.environment == "prod":
             settings.allowed_origins = ["https://replymint.vercel.app"]
+            settings.allowed_origin_regex = None
         else:
+            # Allow the primary staging domain and all preview deployments
             settings.allowed_origins = ["https://replymint-staging.vercel.app"]
+            settings.allowed_origin_regex = r"^https://replymint-staging.*\.vercel\.app$"
 
     return settings
 
