@@ -15,10 +15,7 @@ const PRICE_IDS = {
 async function startCheckout(priceId?: string | null) {
   if (!priceId) return;
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://hhm64ykogk.execute-api.eu-central-1.amazonaws.com/staging';
-
   try {
-    // Try the Next.js API route first
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -28,27 +25,12 @@ async function startCheckout(priceId?: string | null) {
     if (res.ok) {
       const data: { url?: string } = await res.json();
       if (data?.url) {
-        window.location.href = data.url as string;
+        window.location.href = data.url;
         return;
       }
     }
-
-    // If the API route is missing (404) or failed, fallback to calling backend directly
-    const fallback = await fetch(`${backendUrl}/api/v1/stripe/create-checkout-session`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId }),
-    });
-
-    if (fallback.ok) {
-      const data: { data?: { url?: string } } = await fallback.json();
-      const url = data?.data?.url;
-      if (url) {
-        window.location.href = url as string;
-      }
-    }
-  } catch {
-    // ignore
+  } catch (error) {
+    console.error('Checkout error:', error);
   }
 }
 

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 
-interface ErrorResponse {
-  detail?: string;
-}
-
-type BackendSuccess = { url: string } | { data: { url: string } };
-type BackendError = { error?: string; detail?: string };
+type BackendResponse = {
+  status: string;
+  data: {
+    id: string;
+    url: string;
+  };
+  timestamp: string;
+};
 
 export async function POST(req: Request) {
   try {
@@ -28,18 +30,17 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      const errorData: BackendError = await response.json().catch(() => ({} as BackendError));
+      const errorData = await response.json().catch(() => ({}));
       return NextResponse.json({ error: errorData.detail || 'Failed to create checkout session' }, { status: response.status });
     }
 
-    const sessionData = (await response.json()) as BackendSuccess;
-    const url = 'data' in sessionData ? sessionData.data.url : sessionData.url;
-
-    if (!url) {
+    const sessionData: BackendResponse = await response.json();
+    
+    if (!sessionData.data?.url) {
       return NextResponse.json({ error: 'No checkout URL returned' }, { status: 502 });
     }
 
-    return NextResponse.json({ url }, { status: 200 });
+    return NextResponse.json({ url: sessionData.data.url }, { status: 200 });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
