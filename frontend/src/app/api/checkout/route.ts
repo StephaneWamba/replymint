@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     // Call the backend API to create checkout session
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://hhm64ykogk.execute-api.eu-central-1.amazonaws.com/staging';
     
-    const response = await fetch(`${backendUrl}/stripe/create-checkout-session`, {
+    const response = await fetch(`${backendUrl}/api/v1/stripe/create-checkout-session`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -21,8 +21,8 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json({ error: errorData.detail || 'Failed to create checkout session' }, { status: response.status });
+      const errorData = await response.json().catch(() => ({}));
+      return NextResponse.json({ error: (errorData as any).detail || 'Failed to create checkout session' }, { status: response.status });
     }
 
     const sessionData = await response.json();
