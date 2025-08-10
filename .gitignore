@@ -63,6 +63,8 @@ htmlcov/
 # Markdown files (except root README.md)
 *.md
 !README.md
+# Allow docs markdown
+!docs/**/*.md
 
 # Ignore legacy setup scripts; use scripts/aws-ssm.ps1 instead
 backend/setup-aws.ps1
