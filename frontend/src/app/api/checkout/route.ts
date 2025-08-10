@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as { priceId?: string };
     const priceId: string | undefined = body?.priceId;
 
     if (!priceId) {
@@ -16,9 +16,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Server misconfiguration: STRIPE_SECRET_KEY not set' }, { status: 500 });
     }
 
-    const stripe = new Stripe(secretKey, { apiVersion: '2024-06-20' });
+    const stripe = new Stripe(secretKey, { apiVersion: '2023-08-16' });
 
-    const hdrs = headers();
+    const hdrs = await headers();
     const origin = hdrs.get('origin') || 'http://localhost:3000';
 
     const session = await stripe.checkout.sessions.create({
@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id: session.id, url: session.url }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Unknown error' }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

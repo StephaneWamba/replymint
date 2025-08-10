@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,12 +20,12 @@ async function startCheckout(priceId?: string | null) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ priceId }),
     });
-    const data = await res.json();
+    const data: { url?: string } = await res.json();
     if (data?.url) {
       window.location.href = data.url as string;
     }
-  } catch (e) {
-    // no-op
+  } catch {
+    // ignore
   }
 }
 
