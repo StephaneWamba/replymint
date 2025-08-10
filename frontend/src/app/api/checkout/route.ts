@@ -4,6 +4,9 @@ interface ErrorResponse {
   detail?: string;
 }
 
+type BackendSuccess = { url: string } | { data: { url: string } };
+type BackendError = { error?: string; detail?: string };
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { priceId?: string };
@@ -25,12 +28,12 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      const errorData: ErrorResponse = await response.json().catch(() => ({}) as ErrorResponse);
+      const errorData: BackendError = await response.json().catch(() => ({} as BackendError));
       return NextResponse.json({ error: errorData.detail || 'Failed to create checkout session' }, { status: response.status });
     }
 
-    const sessionData = (await response.json()) as { data?: { url?: string } } | { url?: string };
-    const url = (sessionData as any)?.data?.url ?? (sessionData as any)?.url;
+    const sessionData = (await response.json()) as BackendSuccess;
+    const url = 'data' in sessionData ? sessionData.data.url : sessionData.url;
 
     if (!url) {
       return NextResponse.json({ error: 'No checkout URL returned' }, { status: 502 });
