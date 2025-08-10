@@ -64,12 +64,10 @@ htmlcov/
 *.md
 !README.md
 
-# Ignore real setup scripts; keep examples
+# Ignore legacy setup scripts; use scripts/aws-ssm.ps1 instead
 backend/setup-aws.ps1
 backend/setup-aws.bat
 backend/update-ssm.ps1
-!backend/setup-aws.example.ps1
-!backend/update-ssm.example.ps1
 
 # Git ignore itself
 .gitignore
