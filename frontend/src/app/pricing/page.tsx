@@ -4,9 +4,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 
+const PRICE_IDS = {
+  starter: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER,
+  growth: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_GROWTH,
+  scale: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_SCALE,
+};
+
+async function startCheckout(priceId?: string | null) {
+  if (!priceId) return;
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId }),
+    });
+    const data = await res.json();
+    if (data?.url) {
+      window.location.href = data.url as string;
+    }
+  } catch (e) {
+    // no-op
+  }
+}
+
 export default function PricingPage() {
   const plans = [
     {
+      key: 'starter',
       name: 'Starter',
       price: '$9',
       period: '/month',
@@ -22,6 +46,7 @@ export default function PricingPage() {
       popular: false
     },
     {
+      key: 'growth',
       name: 'Growth',
       price: '$29',
       period: '/month',
@@ -38,6 +63,7 @@ export default function PricingPage() {
       popular: true
     },
     {
+      key: 'scale',
       name: 'Scale',
       price: '$79',
       period: '/month',
@@ -54,7 +80,7 @@ export default function PricingPage() {
       ],
       popular: false
     }
-  ];
+  ] as const;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100">
@@ -108,11 +134,9 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/dashboard" className="w-full">
-                  <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
-                    Start free trial
-                  </Button>
-                </Link>
+                <Button className="w-full" onClick={() => startCheckout(PRICE_IDS[plan.key as keyof typeof PRICE_IDS])}>
+                  Start free trial
+                </Button>
               </CardContent>
             </Card>
           ))}
