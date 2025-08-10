@@ -1,5 +1,5 @@
 # ReplyMint Backend Deployment Script
-# Usage: .\deploy.ps1 [staging|prod]
+# Usage: .\deploy-backend.ps1 [staging|prod]
 
 param(
     [Parameter(Mandatory = $false)]
@@ -20,6 +20,27 @@ else {
     $LogRetention = 14
 }
 
+# Generate unique S3 bucket name for deployment artifacts
+$Timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$RandomSuffix = Get-Random -Minimum 1000 -Maximum 9999
+$S3BucketName = "replymint-$Environment-$Timestamp-$RandomSuffix"
+
+Write-Host "Creating S3 bucket: $S3BucketName" -ForegroundColor Blue
+
+# Create S3 bucket for deployment artifacts
+try {
+    aws s3 mb s3://$S3BucketName --region eu-central-1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "S3 bucket created successfully: $S3BucketName" -ForegroundColor Green
+    } else {
+        Write-Host "Failed to create S3 bucket" -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    Write-Host "Error creating S3 bucket: $_" -ForegroundColor Red
+    exit 1
+}
+
 # Build the SAM application
 Write-Host "Building SAM application..." -ForegroundColor Blue
 sam build --use-container
@@ -29,9 +50,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Deploy to the specified environment
-Write-Host "Deploying to $StackName..." -ForegroundColor Blue
-sam deploy --stack-name $StackName --parameter-overrides "Environment=$Environment LogRetentionDays=$LogRetention" --capabilities CAPABILITY_IAM --no-confirm-changeset
+# Deploy to the specified environment using the created S3 bucket
+Write-Host "Deploying to $StackName using S3 bucket: $S3BucketName" -ForegroundColor Blue
+sam deploy --stack-name $StackName --s3-bucket $S3BucketName --parameter-overrides "Environment=$Environment LogRetentionDays=$LogRetention" --capabilities CAPABILITY_IAM --no-confirm-changeset
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Deployment failed!" -ForegroundColor Red
@@ -48,9 +69,9 @@ if ($ApiUrl) {
     Write-Host "API URL: $ApiUrl" -ForegroundColor Green
     Write-Host "Health check: $ApiUrl/health" -ForegroundColor Cyan
     Write-Host "Readiness check: $ApiUrl/ready" -ForegroundColor Cyan
-}
-else {
+} else {
     Write-Host "Could not retrieve API URL" -ForegroundColor Yellow
 }
 
 Write-Host "Deployment script completed!" -ForegroundColor Green
+Write-Host "S3 bucket used: $S3BucketName" -ForegroundColor Cyan

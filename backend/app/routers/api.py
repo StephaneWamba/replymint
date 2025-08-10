@@ -3,11 +3,63 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, List
 import logging
 from datetime import datetime
+import stripe
 
 from ..core.config import get_settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+@router.post("/stripe/create-checkout-session")
+async def create_checkout_session(
+    request_data: Dict[str, Any],
+    settings=Depends(get_settings)
+) -> Dict[str, Any]:
+    """Create a Stripe checkout session"""
+    try:
+        price_id = request_data.get("priceId")
+        if not price_id:
+            raise HTTPException(status_code=400, detail="priceId is required")
+
+        # Get Stripe secret key from settings
+        stripe_secret_key = settings.stripe_secret_key
+        if not stripe_secret_key:
+            logger.error("STRIPE_SECRET_KEY not configured")
+            raise HTTPException(status_code=500, detail="Stripe not configured")
+
+        # Initialize Stripe
+        stripe.api_key = stripe_secret_key
+
+        # Create checkout session
+        session = stripe.checkout.Session.create(
+            mode='subscription',
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            success_url='https://replymint-staging.vercel.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://replymint-staging.vercel.app/pricing?checkout=cancel',
+            allow_promotion_codes=True,
+        )
+
+        logger.info(f"Created Stripe checkout session: {session.id}")
+
+        return {
+            "status": "success",
+            "data": {
+                "id": session.id,
+                "url": session.url
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error creating checkout session: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating checkout session: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/dashboard/overview")
