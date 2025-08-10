@@ -6,22 +6,22 @@ AI-powered email auto-reply SaaS built with Next.js frontend and FastAPI backend
 
 ### Prerequisites
 
-- **Python 3.11** (required - do not use 3.12+)
-- **Node.js 18+** and npm/yarn
-- **AWS CLI** configured with appropriate permissions
-- **AWS SAM CLI** installed
-- **Docker** (for SAM builds)
+- Python 3.11 (required - do not use 3.12+)
+- Node.js 18+ and npm/yarn
+- AWS CLI configured with appropriate permissions
+- AWS SAM CLI installed
+- Docker (for SAM builds)
 
 ### Environment Setup
 
-1. **Clone the repository**
+1. Clone the repository
 
 ```bash
 git clone https://github.com/StephaneWamba/replymint.git
 cd replymint
 ```
 
-2. **Backend Setup**
+2. Backend Setup
 
 ```bash
 cd backend
@@ -30,7 +30,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-3. **Frontend Setup**
+3. Frontend Setup
 
 ```bash
 cd frontend
@@ -41,43 +41,43 @@ npm install
 
 ### Backend (FastAPI + AWS Lambda)
 
-- **Runtime**: Python 3.11 on AWS Lambda
-- **Framework**: FastAPI with Mangum adapter
-- **Infrastructure**: AWS SAM (Serverless Application Model)
-- **Database**: DynamoDB (on-demand billing)
-- **Region**: eu-central-1 (Frankfurt)
+- Runtime: Python 3.11 on AWS Lambda
+- Framework: FastAPI with Mangum adapter
+- Infrastructure: AWS SAM (Serverless Application Model)
+- Database: DynamoDB (on-demand billing)
+- Region: eu-central-1 (Frankfurt)
 
 ### Frontend (Next.js + Vercel)
 
-- **Framework**: Next.js 14 with App Router
-- **Deployment**: Vercel
-- **Authentication**: NextAuth.js with magic links
-- **Styling**: Tailwind CSS
+- Framework: Next.js 14 with App Router
+- Deployment: Vercel
+- Authentication: NextAuth.js with magic links
+- Styling: Tailwind CSS
 
 ## 🚀 Deployment
 
 ### Backend Deployment
 
-#### Staging (Default)
+Staging (Default):
 
 ```bash
-cd backend
-.\deploy.ps1 staging
+# From repo root
+./scripts/deploy-backend.ps1 staging
 ```
 
-#### Production
+Production:
 
 ```bash
-cd backend
-.\deploy.ps1 prod
+# From repo root
+./scripts/deploy-backend.ps1 prod
 ```
 
 ### Frontend Deployment
 
 The frontend automatically deploys to Vercel:
 
-- **Staging**: `replymint-staging.vercel.app`
-- **Production**: `replymint.vercel.app`
+- Staging: `replymint-staging.vercel.app`
+- Production: `replymint.vercel.app`
 
 ## 🔧 Configuration
 
@@ -106,7 +106,21 @@ NEXT_PUBLIC_BACKEND_API_URL=your-backend-api-url
 
 ### AWS SSM Parameters
 
-The backend requires these parameters in AWS Systems Manager:
+Use the consolidated script to initialize/update/list parameters:
+
+```powershell
+# Initialize placeholders for staging
+./scripts/aws-ssm.ps1 -Action init -Environment staging
+
+# Update specific parameters
+./scripts/aws-ssm.ps1 -Action update -Environment staging -ParameterName STRIPE_SECRET_KEY -Value sk_test_xxx
+./scripts/aws-ssm.ps1 -Action update -Environment staging -ParameterName STRIPE_WEBHOOK_SECRET -Value whsec_xxx
+
+# List parameters
+./scripts/aws-ssm.ps1 -Action list -Environment staging
+```
+
+Backend expects these parameters in AWS Systems Manager:
 
 ```
 /replymint/{env}/
@@ -121,14 +135,14 @@ The backend requires these parameters in AWS Systems Manager:
 
 ## 🧪 Testing
 
-### Backend Tests
+Backend Tests:
 
 ```bash
 cd backend
 pytest
 ```
 
-### Frontend Tests
+Frontend Tests:
 
 ```bash
 cd frontend
@@ -137,24 +151,22 @@ npm test
 
 ## 📊 Monitoring
 
-### Health Checks
+Health Checks:
+- Backend: `/health`, `/ready`, `/info`
+- Frontend: Built-in Vercel health monitoring
 
-- **Backend**: `/health`, `/ready`, `/info`
-- **Frontend**: Built-in Vercel health monitoring
-
-### CloudWatch
-
-- **Logs**: Structured JSON logging
-- **Metrics**: Lambda invocations, errors, duration
-- **Alarms**: Error rate, latency thresholds
+CloudWatch:
+- Logs: Structured JSON logging
+- Metrics: Lambda invocations, errors, duration
+- Alarms: Error rate, latency thresholds
 
 ## 🔒 Security
 
-- **CORS**: Environment-specific allowed origins
-- **Trusted Hosts**: Production host validation
-- **SSM**: Secure parameter storage with encryption
-- **IAM**: Least privilege access policies
-- **Webhooks**: Signature verification (Epic 2-3)
+- CORS: Environment-specific allowed origins
+- Trusted Hosts: Production host validation
+- SSM: Secure parameter storage with encryption
+- IAM: Least privilege access policies
+- Webhooks: Signature verification (Epics 2-3)
 
 ## 📁 Project Structure
 
@@ -162,101 +174,43 @@ npm test
 replymint/
 ├── backend/                 # FastAPI backend
 │   ├── app/                # Application code
-│   │   ├── core/          # Configuration, logging
-│   │   ├── routers/       # API endpoints
-│   │   ├── main.py        # FastAPI app
-│   │   └── handler.py     # Lambda handler
-│   ├── tests/             # Test files
-│   ├── template.yaml      # SAM template
-│   ├── samconfig.toml     # SAM configuration
-│   ├── deploy.ps1         # Deployment script
-│   └── requirements.txt   # Python dependencies
-├── frontend/               # Next.js frontend
-│   ├── app/               # App Router pages
-│   ├── components/        # React components
-│   ├── lib/               # Utilities and config
-│   └── package.json       # Node.js dependencies
-├── .github/                # GitHub Actions workflows
-└── internal/               # Project documentation
+│   ├── tests/              # Test files
+│   ├── template.yaml       # SAM template
+│   ├── samconfig.toml      # SAM configuration
+│   └── requirements.txt    # Python dependencies
+├── frontend/                # Next.js frontend
+│   ├── src/app/            # App Router pages
+│   ├── src/components/     # React components
+│   └── package.json        # Node.js dependencies
+├── scripts/                 # Project scripts
+│   ├── aws-ssm.ps1         # SSM management
+│   └── deploy-backend.ps1  # SAM deploy wrapper
+├── docs/                    # Developer guides
+│   ├── mailgun.md
+│   └── stripe.md
+└── .github/                 # GitHub Actions workflows
 ```
 
 ## 🚀 CI/CD Pipeline
 
-### GitHub Actions
+GitHub Actions:
+- Push to main: Auto-deploy to staging
+- Tagged releases: Deploy to production (manual approval)
+- Path-based triggers: Only deploy changed components
 
-- **Push to main**: Auto-deploy to staging
-- **Tagged releases**: Deploy to production (manual approval)
-- **Path-based triggers**: Only deploy changed components
-
-### Environments
-
-- **Staging**: `replymint-staging.vercel.app` + AWS staging stack
-- **Production**: `replymint.vercel.app` + AWS production stack
-
-## 📋 Epic Progress
-
-### ✅ Epic 1: Foundations (Current)
-
-- [x] Backend scaffold with FastAPI
-- [x] SAM template with DynamoDB tables
-- [x] IAM roles and SSM parameter structure
-- [x] Health endpoints and basic API structure
-- [x] CI/CD pipeline setup
-- [x] Environment-specific configurations
-
-### 🔄 Upcoming Epics
-
-- **Epic 2**: Email pipeline (Mailgun integration)
-- **Epic 3**: Billing and provisioning (Stripe)
-- **Epic 4**: Authentication and dashboard
-- **Epic 5**: AI generation and compression
-- **Epic 6**: Usage tracking and quotas
-- **Epic 7**: Security hardening and monitoring
-- **Epic 8**: Admin tooling and documentation
-
-## 🛠️ Development Workflow
-
-1. **Local Development**: Use uvicorn/fastapi for backend, Next.js dev server for frontend
-2. **Testing**: Run tests locally before committing
-3. **Staging**: Push to main triggers staging deployment
-4. **Production**: Create tagged release for production deployment
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Python Version**: Ensure Python 3.11 is used
-2. **AWS Credentials**: Verify AWS CLI configuration
-3. **SSM Parameters**: Ensure parameters exist in Parameter Store
-4. **Dependencies**: Check requirements.txt and package.json
-
-### Getting Help
-
-1. Check CloudWatch logs for backend errors
-2. Review Vercel deployment logs for frontend issues
-3. Verify environment variables are set correctly
-4. Test health endpoints for dependency issues
+Environments:
+- Staging: `replymint-staging.vercel.app` + AWS staging stack
+- Production: `replymint.vercel.app` + AWS production stack
 
 ## 📚 Documentation
 
-- [Backend README](backend/README.md) - Detailed backend setup and deployment
-- [Frontend README](frontend/README.md) - Frontend development guide
-- [Implementation Plan](internal/implementation_plan.md) - Overall project roadmap
-- [Epic 1 Details](internal/epic1_foundations_todo.md) - Current epic specifications
+- Mailgun: docs/mailgun.md
+- Stripe: docs/stripe.md
 
-## 🤝 Contributing
+## 🆘 Troubleshooting
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is proprietary software. All rights reserved.
-
----
-
-**Status**: Epic 1 - Foundations ✅ Complete  
-**Next**: Epic 2 - Email Pipeline Implementation
+Common Issues:
+1. Python version must be 3.11
+2. AWS CLI credentials configured (`aws configure`)
+3. SSM parameters exist in Parameter Store
+4. Dependencies installed (requirements.txt, package.json)
