@@ -42,6 +42,7 @@ EMAIL_FROM=noreply@replymint.com
 ## Email Provider Options
 
 ### Gmail (Recommended for development)
+
 ```bash
 EMAIL_SERVER_HOST=smtp.gmail.com
 EMAIL_SERVER_PORT=587
@@ -50,6 +51,7 @@ EMAIL_SERVER_PASS=your-app-password
 ```
 
 ### SendGrid
+
 ```bash
 EMAIL_SERVER_HOST=smtp.sendgrid.net
 EMAIL_SERVER_PORT=587
@@ -58,6 +60,7 @@ EMAIL_SERVER_PASS=your-sendgrid-api-key
 ```
 
 ### Mailgun
+
 ```bash
 EMAIL_SERVER_HOST=smtp.mailgun.org
 EMAIL_SERVER_PORT=587
@@ -68,17 +71,20 @@ EMAIL_SERVER_PASS=your-mailgun-password
 ## Getting Started
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Set up environment variables**:
+
    ```bash
    cp env.example .env.local
    # Edit .env.local with your configuration
    ```
 
 3. **Run development server**:
+
    ```bash
    npm run dev
    ```
@@ -132,7 +138,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function NewPage() {
   const { user } = useAuth();
-  
+
   return (
     <ProtectedRoute>
       <div>Protected content for {user?.email}</div>
@@ -152,6 +158,7 @@ export default function NewPage() {
 ## Deployment
 
 1. **Build the application**:
+
    ```bash
    npm run build
    ```
@@ -164,16 +171,19 @@ export default function NewPage() {
 ## Troubleshooting
 
 ### Magic Link Not Working
+
 - Check email server configuration
 - Verify `NEXTAUTH_URL` matches your domain
 - Check spam folder for verification emails
 
 ### Backend API Errors
+
 - Verify `NEXT_PUBLIC_API_URL` is correct
 - Check backend is running and accessible
 - Verify JWT tokens are valid
 
 ### Authentication Issues
+
 - Clear browser cookies and local storage
 - Check `NEXTAUTH_SECRET` is set correctly
 - Verify email provider credentials
