@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# This staging environment should not be indexed by search engines
+# Production robots.txt will be different

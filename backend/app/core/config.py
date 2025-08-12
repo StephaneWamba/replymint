@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     stripe_secret_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None
 
+    # Stripe Pricing Configuration
+    stripe_price_starter: Optional[str] = None
+    stripe_price_growth: Optional[str] = None
+    stripe_price_scale: Optional[str] = None
+
+    # Plan Quotas
+    plan_starter_quota: int = Field(default=200)
+    plan_growth_quota: int = Field(default=1000)
+    plan_scale_quota: int = Field(default=3000)
+
     # OpenAI (loaded from SSM)
     openai_api_key: Optional[str] = None
 
@@ -98,6 +108,18 @@ def load_ssm_parameters(settings: Settings) -> None:
                 settings.stripe_secret_key = param_value
             elif param_name == "stripe_webhook_secret":
                 settings.stripe_webhook_secret = param_value
+            elif param_name == "stripe_price_starter":
+                settings.stripe_price_starter = param_value
+            elif param_name == "stripe_price_growth":
+                settings.stripe_price_growth = param_value
+            elif param_name == "stripe_price_scale":
+                settings.stripe_price_scale = param_value
+            elif param_name == "plan_starter_quota":
+                settings.plan_starter_quota = int(param_value)
+            elif param_name == "plan_growth_quota":
+                settings.plan_growth_quota = int(param_value)
+            elif param_name == "plan_scale_quota":
+                settings.plan_scale_quota = int(param_value)
             elif param_name == "openai_api_key":
                 settings.openai_api_key = param_value
             elif param_name == "jwt_secret":
@@ -111,3 +133,7 @@ def load_ssm_parameters(settings: Settings) -> None:
         logger = logging.getLogger(__name__)
         logger.warning(f"Failed to load SSM parameters: {e}")
         logger.info("Using environment variable defaults")
+
+
+# Global settings instance for import by other modules
+settings = get_settings()

@@ -13,6 +13,11 @@ Parameters:
     Type: Number
     Default: 14
     Description: CloudWatch log retention in days
+  
+  SlackWebhookUrl:
+    Type: String
+    Default: ""
+    Description: Slack webhook URL for alerts (optional)
 
 Globals:
   Function:
@@ -124,6 +129,7 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:Query
                   - dynamodb:Scan
+                  - dynamodb:DescribeTable
                 Resource:
                   - !GetAtt UsersTable.Arn
                   - !GetAtt UsageCountersTable.Arn
@@ -159,7 +165,9 @@ Resources:
         AllowOrigin: !If 
           - IsProd
           - "'https://replymint.vercel.app'"
-          - "'*'"
+          - "'https://replymint-staging.vercel.app'"
+        MaxAge: "'300'"
+        AllowCredentials: false
 
   # FastAPI Lambda Function
   FastApiFunction:
@@ -190,43 +198,105 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${FastApiFunction}
       RetentionInDays: !Ref LogRetentionDays
 
+  # CloudWatch Alarms
+  ErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${Environment}-replymint-error-rate
+      AlarmDescription: High error rate for ReplyMint API
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref FastApiFunction
+      AlarmActions: 
+        - !If [HasSlackWebhook, !GetAtt AlarmProcessorFunction.Arn, !Ref "AWS::NoValue"]
+
+  DurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${Environment}-replymint-duration
+      AlarmDescription: High latency for ReplyMint API
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref FastApiFunction
+      AlarmActions:
+        - !If [HasSlackWebhook, !GetAtt AlarmProcessorFunction.Arn, !Ref "AWS::NoValue"]
+
+  # Alarm Processor Lambda Function (Direct CloudWatch trigger)
+  AlarmProcessorFunction:
+    Type: AWS::Serverless::Function
+    Condition: HasSlackWebhook
+    Properties:
+      Handler: app/alarm_processor.lambda_handler
+      CodeUri: .
+      Description: !Sub ReplyMint Alarm Processor - ${Environment}
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
+
+  # Alarm Processor Log Group
+  AlarmProcessorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: HasSlackWebhook
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AlarmProcessorFunction}
+      RetentionInDays: !Ref LogRetentionDays
+
 Conditions:
   IsProd: !Equals [!Ref Environment, prod]
+  HasSlackWebhook: !Not [!Equals [!Ref SlackWebhookUrl, ""]]
 
 Outputs:
   ApiUrl:
     Description: API Gateway base URL
     Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
     Export:
-      Name: !Sub ${AWS::StackName}-ApiUrl
+      Name: !Sub replymint-${Environment}-ApiUrl
   
   UsersTableName:
     Description: Users DynamoDB table name
     Value: !Ref UsersTable
     Export:
-      Name: !Sub ${AWS::StackName}-UsersTable
+      Name: !Sub replymint-${Environment}-UsersTable
   
   UsageCountersTableName:
     Description: Usage counters DynamoDB table name
     Value: !Ref UsageCountersTable
     Export:
-      Name: !Sub ${AWS::StackName}-UsageCountersTable
+      Name: !Sub replymint-${Environment}-UsageCountersTable
   
   EmailLogsTableName:
     Description: Email logs DynamoDB table name
     Value: !Ref EmailLogsTable
     Export:
-      Name: !Sub ${AWS::StackName}-EmailLogsTable
+      Name: !Sub replymint-${Environment}-EmailLogsTable
   
   SettingsTableName:
     Description: Settings DynamoDB table name
     Value: !Ref SettingsTable
     Export:
-      Name: !Sub ${AWS::StackName}-SettingsTable
+      Name: !Sub replymint-${Environment}-SettingsTable
   
   LambdaExecutionRoleArn:
     Description: Lambda execution role ARN
     Value: !GetAtt LambdaExecutionRole.Arn
     Export:
-      Name: !Sub ${AWS::StackName}-LambdaExecutionRole
-
+      Name: !Sub replymint-${Environment}-LambdaExecutionRole

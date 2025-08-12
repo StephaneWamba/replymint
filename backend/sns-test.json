@@ -1,0 +1,10 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "Sns": {
+        "Message": "{\"AlarmName\":\"test-alarm\",\"AlarmDescription\":\"Manual invoke test\",\"NewStateValue\":\"ALARM\",\"OldStateValue\":\"OK\",\"NewStateReason\":\"Manual test\",\"StateChangeTime\":\"2025-08-11T12:00:00.000Z\"}"
+      }
+    }
+  ]
+}

@@ -6,8 +6,11 @@ import logging
 from contextlib import asynccontextmanager
 
 from .routers import health, webhooks, api
+from .routers import users as users_router
+from .routers import admin as admin_router
 from .core.config import get_settings
 from .core.logging import setup_logging
+from .core.security import setup_security_middleware, get_security_headers
 
 # Setup logging
 setup_logging()
@@ -41,34 +44,27 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.environment != "prod" else None,
     )
 
-    # CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_origin_regex=settings.allowed_origin_regex,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-    )
-
-    # Trusted host middleware (security)
-    if settings.environment == "prod":
-        app.add_middleware(
-            TrustedHostMiddleware,
-            allowed_hosts=["replymint.vercel.app"]
-        )
+    # Setup security middleware
+    setup_security_middleware(app)
 
     # Include routers
     app.include_router(health.router, tags=["health"])
     app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
     app.include_router(api.router, prefix="/api/v1", tags=["api"])
+    app.include_router(users_router.router, prefix="/api/v1", tags=["users"])
+    app.include_router(admin_router.router, prefix="/api/v1", tags=["admin"])
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
-        """Log all incoming requests"""
+        """Log all incoming requests and add security headers"""
         logger.info(f"{request.method} {request.url.path}")
         response = await call_next(request)
         logger.info(f"Response status: {response.status_code}")
+
+        # Add security headers
+        for header, value in get_security_headers().items():
+            response.headers[header] = value
+
         return response
 
     return app
@@ -76,7 +72,4 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
-
-@app.get("/health")
-def health_check() -> dict:
-    return {"status": "ok"}
+# The health endpoint is defined in `routers.health` and included via `include_router`.

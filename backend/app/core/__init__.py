@@ -1,1 +1,1 @@
-# Core module for ReplyMint Backend
+# Core package

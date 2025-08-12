@@ -1,0 +1,22 @@
+{
+  "version": "0",
+  "id": "test-alarm-id-12345",
+  "detail-type": "CloudWatch Alarm State Change",
+  "source": "aws.cloudwatch",
+  "account": "905418288897",
+  "time": "2025-08-11T14:00:00.000Z",
+  "region": "eu-central-1",
+  "detail": {
+    "alarmName": "staging-replymint-error-rate",
+    "alarmDescription": "High error rate for ReplyMint API",
+    "state": {
+      "value": "ALARM",
+      "reason": "Threshold Crossed: 1 out of the last 1 datapoints was greater than the threshold (5.0)"
+    },
+    "previousState": {
+      "value": "OK",
+      "reason": "Threshold Crossed: 1 out of the last 1 datapoints was greater than the threshold (5.0)"
+    }
+  }
+}
+
